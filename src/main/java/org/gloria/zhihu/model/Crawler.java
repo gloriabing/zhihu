@@ -16,7 +16,6 @@ public class Crawler {
 
     private URI uri;
     private CrawlType crawlType;
-    private int page;
     
     private String params;
     
