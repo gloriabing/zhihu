@@ -22,6 +22,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -69,10 +70,13 @@ public class CrawlUserServiceImplTest {
         HttpsUtil.post(url, map);
         
         Crawler crawler = new Crawler();
-        crawler.setCrawlType(CrawlType.CATALOG);
+        crawler.setCrawlType(CrawlType.SEED);
         crawler.setUri(URI.create("https://www.zhihu.com/"));
 
-        crawlUserService.parseCatalog(crawler);
+        List<Crawler> crawlers = crawlUserService.parseCatalog(crawler);
+        for (Crawler c : crawlers) {
+            System.out.println(c.getUri().toString());
+        }
 
     }
 //    
