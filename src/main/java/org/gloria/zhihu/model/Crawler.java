@@ -2,6 +2,7 @@ package org.gloria.zhihu.model;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.net.URI;
 
@@ -12,6 +13,7 @@ import java.net.URI;
  */
 @Setter
 @Getter
+@ToString
 public class Crawler {
 
     private URI uri;
