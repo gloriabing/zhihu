@@ -1,0 +1,60 @@
+<configuration>
+
+    <property name="LOG_DIR" value="logs/"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d | %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SERVICE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_DIR}/schedule.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/service.log.%d</fileNamePattern>
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d | %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="TASK" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_DIR}/task.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/task.log.%d</fileNamePattern>
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d | %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_DIR}/error.log</File>
+        <encoder>
+            <pattern>%d | %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/error.log.%d</fileNamePattern>
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="error" level="INFO">
+        <appender-ref ref="ERROR"/>
+    </logger>
+
+    <logger name="service" level="INFO">
+        <appender-ref ref="SERVICE"/>
+    </logger>
+
+    <logger name="task" level="INFO">
+        <appender-ref ref="TASK"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>
