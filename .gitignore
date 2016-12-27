@@ -20,3 +20,5 @@ src/main/resources/zhihu.properties
 
 .idea/
 zhihu.iml
+logs/
+target/
