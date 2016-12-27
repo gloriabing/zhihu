@@ -15,6 +15,8 @@ import org.gloria.zhihu.utils.JacksonUtil;
 import org.gloria.zhihu.utils.ResourcesUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
@@ -47,6 +49,9 @@ import static org.junit.Assert.*;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class CrawlUserServiceImplTest {
+
+    private final Logger LOG = LoggerFactory.getLogger("service");
+    private final Logger TASK = LoggerFactory.getLogger("task");
 
     @Autowired
     private ICrawlUserService crawlUserService;
@@ -88,14 +93,16 @@ public class CrawlUserServiceImplTest {
                 if (r) {
                     List<Crawler> crawlers = crawlUserService.parseCatalog(preCrawl);
                     for (Crawler c : crawlers) {
-                        System.out.println(c.getUri().toString());
+                        
+                        TASK.info("new url = {}", c.getUri().toString());
+                        
                         customRedisTemplate.lpush("crawl:queue", c);
                     }
                 }
             } else if (preCrawl.getCrawlType() == CrawlType.CONTENT) {
                 User user = crawlUserService.parseContent(preCrawl);
-                System.out.println(user);
                 userDao.save(user);
+                LOG.info(JacksonUtil.toJson(user));
             }
             preCrawl = customRedisTemplate.rpop("crawl:queue", Crawler.class);
             try {

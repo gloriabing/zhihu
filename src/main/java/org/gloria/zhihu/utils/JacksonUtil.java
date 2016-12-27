@@ -56,13 +56,12 @@ public class JacksonUtil {
 
     /**
      * 对象 转 json
-     * @param clazz
-     * @param <T>
+     * @param obj
      * @return
      */
-    public static <T> String toJson(Class<T> clazz) {
+    public static String toJson(Object obj) {
         try {
-            return mapper.writeValueAsString(clazz);
+            return mapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
             return null;
         }

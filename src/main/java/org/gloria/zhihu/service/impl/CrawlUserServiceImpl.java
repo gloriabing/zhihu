@@ -10,6 +10,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +27,8 @@ import java.util.regex.Pattern;
  */
 @Service
 public class CrawlUserServiceImpl implements ICrawlUserService {
+
+    private final Logger ERROR = LoggerFactory.getLogger("error");
 
     /**
      * 发现更多用户链接
@@ -65,7 +69,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                         c2.setCrawlType(CrawlType.CATALOG);
                         crawlers.add(c2);
                     } catch (Exception e) {
-                        
+                        ERROR.info("", e);
                     }
                 }
             } else {
@@ -96,7 +100,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                     json = JacksonUtil.toJsonNode(body);
                     data = json.get("data");
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep((long) (Math.random()*100));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -105,7 +109,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                 
             } 
         } catch (IOException e) {
-            e.printStackTrace();
+            ERROR.info("", e);
         }
         return crawlers;
     }
@@ -168,7 +172,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                 //行业
                 user.setBusiness(userNode.get("business").get("name").asText());
             } catch (Exception e) {
-                System.out.println("business error, url = " + crawler.getUri().toString());
+                ERROR.info("business error, url = {}", crawler.getUri().toString());
             }
 
             List<String> locations = new ArrayList<>();
@@ -179,7 +183,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                     locations.add(((JsonNode) locationsNode.next()).get("name").asText());
                 }
             } catch (Exception e) {
-                System.out.println("locations error, url = " + crawler.getUri().toString());
+                ERROR.info("locations error, url = {}", crawler.getUri().toString());
             }
 
             user.setLocations(locations);
@@ -204,24 +208,30 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                     educations.add(education);
                 }
             } catch (Exception e) {
-                System.out.println("educations error, url = " + crawler.getUri().toString());
+                ERROR.info("educations error, url = {}", crawler.getUri().toString());
             }
             user.setEducations(educations);
             user.setName(userNode.get("name").asText());
             try {
                 user.setWeibo(userNode.get("sinaWeiboUrl").asText());
             } catch (Exception e) {
-                System.out.println("weibo error, url = " + crawler.getUri().toString());
+                ERROR.info("weibo error, url = {}", crawler.getUri().toString());
             }
 
             user.setVoteupCount(userNode.get("voteupCount").asLong());
             user.setFollowerCount(userNode.get("followerCount").asLong());
             user.setAnswerCount(userNode.get("answerCount").asLong());
-            
-            
+            try {
+                user.setGender(userNode.get("gender").asInt() == 1 ? "male" : "female");
+            } catch (Exception e) {
+                ERROR.info("gender error, url = {}", crawler.getUri().toString());
+            }
+
+
         } catch (IOException e) {
-            e.printStackTrace();
+            ERROR.info("", e);
         }
+        
         return user;
     }
 }
