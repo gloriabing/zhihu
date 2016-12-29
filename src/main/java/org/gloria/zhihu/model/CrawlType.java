@@ -11,7 +11,11 @@ public enum CrawlType {
     
     CATALOG(0),
     
-    CONTENT(1);
+    CONTENT(1),
+    
+    FOLLOWEES(10),
+
+    FOLLOWERS(20);
 
     int type;
 

@@ -88,27 +88,30 @@ public class CrawlUserServiceImplTest {
         Crawler preCrawl = customRedisTemplate.rpop("crawl:queue", Crawler.class);
         System.out.println(preCrawl);
         while (preCrawl != null) {
+            preCrawl = customRedisTemplate.rpop("crawl:queue", Crawler.class);
             if (preCrawl.getCrawlType() == CrawlType.CATALOG) {
-                boolean r = customRedisTemplate.setIfAbsent(preCrawl.getUri().toString(), "");
-                if (r) {
-                    List<Crawler> crawlers = crawlUserService.parseCatalog(preCrawl);
-                    for (Crawler c : crawlers) {
-                        
-                        TASK.info("new url = {}", c.getUri().toString());
-                        
-                        customRedisTemplate.lpush("crawl:queue", c);
-                    }
-                }
+//                boolean r = customRedisTemplate.setIfAbsent(preCrawl.getUri().toString(), "");
+//                if (r) {
+//                    List<Crawler> crawlers = crawlUserService.parseCatalog(preCrawl);
+//                    for (Crawler c : crawlers) {
+//                        
+//                        TASK.info("new url = {}", c.getUri().toString());
+//                        
+//                        customRedisTemplate.lpush("crawl:queue", c);
+//                    }
+//                }
+                customRedisTemplate.lpush("crawl:queue:catalog", preCrawl);
             } else if (preCrawl.getCrawlType() == CrawlType.CONTENT) {
                 User user = crawlUserService.parseContent(preCrawl);
-                userDao.save(user);
-                LOG.info(JacksonUtil.toJson(user));
-            }
-            preCrawl = customRedisTemplate.rpop("crawl:queue", Crawler.class);
-            try {
-                Thread.sleep((long) (Math.random()*1000));
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                if (null != user) {
+                    userDao.save(user);
+                    LOG.info(JacksonUtil.toJson(user));
+                    try {
+                        Thread.sleep((long) (Math.random()*200));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }

@@ -1,6 +1,8 @@
 package org.gloria.zhihu.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
+import org.apache.commons.lang.StringUtils;
 import org.gloria.zhihu.http.HttpsUtil;
 import org.gloria.zhihu.model.*;
 import org.gloria.zhihu.mongodb.dao.UserDao;
@@ -12,13 +14,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Create on 2016/12/23 16:01.
@@ -29,6 +30,7 @@ import java.util.regex.Pattern;
 public class CrawlUserServiceImpl implements ICrawlUserService {
 
     private final Logger ERROR = LoggerFactory.getLogger("error");
+    private final Logger LOG = LoggerFactory.getLogger("service");
 
     /**
      * 发现更多用户链接
@@ -37,6 +39,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
      * @param crawler
      * @return
      */
+    @SuppressWarnings("Duplicates")
     @Override
     public List<Crawler> parseCatalog(Crawler crawler) {
 
@@ -84,7 +87,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                     while (it.hasNext()) {
                         JsonNode node = (JsonNode) it.next();
                         String type = node.get("type").asText();
-                        String url_token = node.get("url_token").asText();
+                        String url_token = URLEncoder.encode(node.get("url_token").asText());
                         String userUrl = "https://www.zhihu.com/" + type + "/" + url_token;
                         Crawler c = new Crawler();
                         c.setCrawlType(CrawlType.CONTENT);
@@ -96,9 +99,15 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                         c2.setUri(URI.create(userUrl));
                         crawlers.add(c2);
                     }
-                    body = HttpsUtil.get(json.get("paging").get("next").asText(), false);
-                    json = JacksonUtil.toJsonNode(body);
-                    data = json.get("data");
+                    try {
+                        body = HttpsUtil.get(json.get("paging").get("next").asText(), false);
+                        json = JacksonUtil.toJsonNode(body);
+                        data = json.get("data");
+                    } catch (Exception e){
+                        ERROR.info(json.get("paging").get("next").asText());
+                        
+                        ERROR.info("", e);
+                    }
                     try {
                         Thread.sleep((long) (Math.random()*100));
                     } catch (InterruptedException e) {
@@ -114,13 +123,19 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
         return crawlers;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public User parseContent(Crawler crawler) {
         User user = new User();
         user.setUrl(crawler.getUri().toString());
         try {
             String body = HttpsUtil.get(crawler.getUri().toString(), false);
-            Document document = Jsoup.parse(body);
+            Document document = null;
+            try {
+                document = Jsoup.parse(body);
+            } catch (Exception e) {
+                return null;
+            }
             Element data = document.getElementById("data");
             body = data.attr("data-state");
             JsonNode jsonNode = JacksonUtil.toJsonNode(body);
@@ -233,5 +248,231 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
         }
         
         return user;
+    }
+
+    @SuppressWarnings("Duplicates")
+    @Override
+    public UserInfo parseUserInfo(Crawler crawler) {
+
+        UserInfo user = new UserInfo();
+        user.setUrl(crawler.getUri().toString());
+        try {
+            String body = HttpsUtil.get(crawler.getUri().toString(), false);
+            Document document = Jsoup.parse(body);
+            Element data = document.getElementById("data");
+            body = data.attr("data-state");
+            JsonNode jsonNode = JacksonUtil.toJsonNode(body);
+            JsonNode users = jsonNode.get("entities").get("users");
+            JsonNode userNode = null;
+            Iterator<Map.Entry<String, JsonNode>> it = users.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> map = it.next();
+                if (!map.getKey().equals("gloria_zhang")) {
+                    user.setName(map.getKey());
+                    userNode = map.getValue();
+                    break;
+                }
+            }
+            user.setHeadline(JacksonUtil.getTextValue(userNode,"headline"));
+            user.setId(JacksonUtil.getTextValue(userNode, "id"));
+            //职业经历
+            Iterator employmentsNode = userNode.get("employments").iterator();
+            List<Employment> employments = new ArrayList<>();
+            try {
+                while (employmentsNode.hasNext()) {
+                    JsonNode node = (JsonNode) employmentsNode.next();
+                    Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
+                    Employment employment = new Employment();
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, JsonNode> map = iterator.next();
+                        if (map.getKey().equals("company")) {
+                            employment.setCompany(map.getValue().get("name").asText());
+                        }
+                        if (map.getKey().equals("job")) {
+                            employment.setJob(map.getValue().get("name").asText());
+                        }
+                    }
+                    employments.add(employment);
+                }
+            } catch (Exception e) {
+                ERROR.info("employments error, url = {}", crawler.getUri().toString());
+            }
+
+            user.setEmployments(employments);
+
+            String avatarUrlTemplate = JacksonUtil.getTextValue(userNode, "avatarUrlTemplate");
+            avatarUrlTemplate = avatarUrlTemplate.replace("{size}", "xll");
+            user.setMask(avatarUrlTemplate);
+
+            user.setDescription(JacksonUtil.getTextValue(userNode, "description"));
+
+            try {
+                //行业
+                user.setBusiness(userNode.get("business").get("name").asText());
+            } catch (Exception e) {
+                ERROR.info("business error, url = {}", crawler.getUri().toString());
+            }
+
+            List<String> locations = new ArrayList<>();
+            try {
+                //居住地
+                Iterator locationsNode = userNode.get("locations").iterator();
+                while (locationsNode.hasNext()) {
+                    locations.add(JacksonUtil.getTextValue((JsonNode) locationsNode.next(), "name"));
+                }
+            } catch (Exception e) {
+                ERROR.info("locations error, url = {}", crawler.getUri().toString());
+            }
+
+            user.setLocations(locations);
+
+            List<Education> educations = new ArrayList<>();
+            try {
+                //教育经历
+                Iterator educationsNode = userNode.get("educations").iterator();
+                while (educationsNode.hasNext()) {
+                    JsonNode node = (JsonNode) educationsNode.next();
+                    Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
+                    Education education = new Education();
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, JsonNode> map = iterator.next();
+                        if (map.getKey().equals("major")) {
+                            education.setMajor(map.getValue().get("name").asText());
+                        }
+                        if (map.getKey().equals("school")) {
+                            education.setSchool(map.getValue().get("name").asText());
+                        }
+                    }
+                    educations.add(education);
+                }
+            } catch (Exception e) {
+                ERROR.info("educations error, url = {}", crawler.getUri().toString());
+            }
+            user.setEducations(educations);
+            user.setName(JacksonUtil.getTextValue(userNode, "name"));
+            try {
+                user.setWeibo(JacksonUtil.getTextValue(userNode, "sinaWeiboUrl"));
+            } catch (Exception e) {
+                ERROR.info("weibo error, url = {}", crawler.getUri().toString());
+            }
+
+            user.setVoteupCount(JacksonUtil.getLongValue(userNode, "voteupCount"));
+            user.setFollowingCount(JacksonUtil.getLongValue(userNode, "followingCount"));
+            user.setFollowerCount(JacksonUtil.getLongValue(userNode, "followerCount"));
+            user.setAnswerCount(JacksonUtil.getLongValue(userNode, "answerCount"));
+            user.setQuestionCount(JacksonUtil.getLongValue(userNode, "questionCount"));
+            user.setMarkedAnswersCount(JacksonUtil.getLongValue(userNode, "markedAnswersCount"));
+            user.setArticlesCount(JacksonUtil.getLongValue(userNode, "articlesCount"));
+            user.setThankedCount(JacksonUtil.getLongValue(userNode, "thankedCount"));
+            user.setFavoritedCount(JacksonUtil.getLongValue(userNode, "favoritedCount"));
+            user.setFollowingTopicCount(JacksonUtil.getLongValue(userNode, "followingTopicCount"));
+            user.setHostedLiveCount(JacksonUtil.getLongValue(userNode, "hostedLiveCount"));
+            user.setFollowingColumnsCount(JacksonUtil.getLongValue(userNode, "followingColumnsCount"));
+            user.setFollowingFavlistsCount(JacksonUtil.getLongValue(userNode, "followingFavlistsCount"));
+            
+            try {
+                user.setGender(JacksonUtil.getIntValue(userNode, "gender") == 1 ? "male" : "female");
+            } catch (Exception e) {
+                ERROR.info("gender error, url = {}", crawler.getUri().toString());
+            }
+
+            //认证
+            List<String> badges = new ArrayList<>();
+            try {
+                //居住地
+                Iterator badgesNode = userNode.get("badge").iterator();
+                while (badgesNode.hasNext()) {
+                    badges.add(JacksonUtil.getTextValue((JsonNode) badgesNode.next(), "description"));
+                }
+            } catch (Exception e) {
+                ERROR.info("badge error, url = {}", crawler.getUri().toString());
+            }
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return user;
+    }
+
+    /**
+     * 关注了,关注者
+     *
+     * @param crawler
+     * @return
+     */
+    @SuppressWarnings("Duplicates")
+    @Override
+    public List<UserInfo> parseUserFollows(Crawler crawler) {
+        List<UserInfo> userInfos = new ArrayList<>();
+        try {
+            String url = "";
+            if (crawler.getCrawlType() == CrawlType.FOLLOWEES) {
+                url = "https://www.zhihu.com/api/v4/members/" + crawler.getUri().toString().substring("https://www.zhihu.com/people/".length()) + "/followees?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=10&offset=0";
+            } else if (crawler.getCrawlType() == CrawlType.FOLLOWERS) {
+                url = "https://www.zhihu.com/api/v4/members/" + crawler.getUri().toString().substring("https://www.zhihu.com/people/".length()) + "/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=10&offset=0";
+            }
+            if (StringUtils.isBlank(url)) {
+                return null;
+            }
+            String body = HttpsUtil.get(url, false);
+            JsonNode json = JacksonUtil.toJsonNode(body);
+            JsonNode data = json.get("data");
+            while (data.size() != 0) {
+                Iterator it = data.elements();
+                while (it.hasNext()) {
+                    JsonNode node = (JsonNode) it.next();
+                    UserInfo user = parseFollowUserBasicInfo(node);
+                    if (user != null) {
+                        userInfos.add(user);
+                    }
+                    LOG.info(JacksonUtil.toJson(user));
+                    
+                }
+                try {
+                    body = HttpsUtil.get(json.get("paging").get("next").asText(), false);
+                    json = JacksonUtil.toJsonNode(body);
+                    data = json.get("data");
+                } catch (Exception e) {
+                    ERROR.info(json.get("paging").get("next").asText());
+                    ERROR.info("", e);
+                }
+                try {
+                    Thread.sleep((long) (Math.random() * 100));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+    
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return userInfos;
+    }
+
+
+    private UserInfo parseFollowUserBasicInfo(JsonNode node) {
+        try {
+            UserInfo user = new UserInfo();
+
+            user.setId(JacksonUtil.getTextValue(node, "id"));
+            String avatarUrlTemplate = JacksonUtil.getTextValue(node, "avatar_url_template");
+            avatarUrlTemplate = avatarUrlTemplate.replace("{size}", "xll");
+            user.setMask(avatarUrlTemplate);
+
+            user.setName(JacksonUtil.getTextValue(node, "name"));
+            user.setHeadline(JacksonUtil.getTextValue(node, "headline"));
+            user.setAnswerCount(JacksonUtil.getLongValue(node, "answer_count"));
+            user.setFollowerCount(JacksonUtil.getLongValue(node, "follower_count"));
+
+            String type = JacksonUtil.getTextValue(node, "type");
+            String url_token = URLEncoder.encode(node.get("url_token").asText());
+            String url = "https://www.zhihu.com/" + type + "/" + url_token;
+
+            user.setUrl(url);
+            user.setArticlesCount(JacksonUtil.getLongValue(node, "articles_count"));
+            return user;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

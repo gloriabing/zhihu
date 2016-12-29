@@ -1,5 +1,6 @@
 package org.gloria.zhihu.utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,6 +24,7 @@ public class JacksonUtil {
 
     static {
         mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
     }
 
     /**
@@ -89,6 +91,21 @@ public class JacksonUtil {
         }
     }
 
+    public static Long getLongValue(JsonNode node, String key) {
+        return node.get(key).asLong();
+    }
+
+    public static String getTextValue(JsonNode node, String key) {
+        return node.get(key).asText();
+    }
+
+    public static Integer getIntValue(JsonNode node, String key) {
+        return node.get(key).asInt();
+    }
+
+    public static Boolean getBoolValue(JsonNode node, String key) {
+        return node.get(key).asBoolean();
+    }
 
     public static void main(String[] args) throws IOException {
         OkHttpClient client = new OkHttpClient();
