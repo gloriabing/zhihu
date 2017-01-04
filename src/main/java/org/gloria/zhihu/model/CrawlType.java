@@ -13,6 +13,10 @@ public enum CrawlType {
     
     CONTENT(1),
     
+    QUESTION(2),
+    
+    ANSWER(3),
+    
     FOLLOWEES(10),
 
     FOLLOWERS(20);
