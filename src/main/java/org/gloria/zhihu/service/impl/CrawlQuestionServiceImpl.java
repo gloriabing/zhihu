@@ -32,12 +32,15 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
     @Override
     public Question parseQuestion(Crawler crawler) {
         try {
+            String url = crawler.getUri().toString();
+            url = url.substring(0, url.indexOf('?'));
+            
             Question question = new Question();
-            String body = HttpsUtil.get(crawler.getUri().toString(), false);
+            question.setUrl(url);
+            String body = HttpsUtil.get(url, false);
             Document document = Jsoup.parse(body);
 
-            if (crawler.getUri().toString().matches(questionUrl)) {
-
+            if (url.matches(questionUrl)) {
                 Elements tagElems = document.getElementsByClass("zm-item-tag");
                 List<String> tags = new ArrayList<>();
                 for (Element tagElem : tagElems) {
@@ -66,7 +69,7 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
                                 regexMatch("相关话题关注者[\\s\\S]*?<strong>([\\d]+)</strong>[\\s\\S]*?人", document.html())
                         ));
                 return question;
-            } else if (crawler.getUri().toString().matches(zhuanlanUrl)) {
+            } else if (url.matches(zhuanlanUrl)) {
                 
             }
 

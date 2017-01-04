@@ -16,6 +16,8 @@ import java.util.List;
 @ToString
 public class Question {
 
+    private String url; 
+
     private List<String> tags;
     private String title;
     private Long commentCount;
