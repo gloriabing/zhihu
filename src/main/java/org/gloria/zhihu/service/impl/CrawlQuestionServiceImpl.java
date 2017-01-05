@@ -1,10 +1,10 @@
 package org.gloria.zhihu.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.gloria.zhihu.http.HttpsUtil;
-import org.gloria.zhihu.model.Answer;
-import org.gloria.zhihu.model.Crawler;
-import org.gloria.zhihu.model.Question;
+import org.gloria.zhihu.model.*;
 import org.gloria.zhihu.service.ICrawlQuestionService;
+import org.gloria.zhihu.utils.JacksonUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -26,8 +26,6 @@ import java.util.regex.Pattern;
 public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
 
 
-    private final String questionUrl = "^https://www\\.zhihu\\.com/question/.*?";
-    private final String zhuanlanUrl = "^https://zhuanlan\\.zhihu\\.com/.*?";
     
     @Override
     public Question parseQuestion(Crawler crawler) {
@@ -37,10 +35,9 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
             
             Question question = new Question();
             question.setUrl(url);
-            String body = HttpsUtil.get(url, false);
-            Document document = Jsoup.parse(body);
 
-            if (url.matches(questionUrl)) {
+                String body = HttpsUtil.get(url, false);
+                Document document = Jsoup.parse(body);
                 Elements tagElems = document.getElementsByClass("zm-item-tag");
                 List<String> tags = new ArrayList<>();
                 for (Element tagElem : tagElems) {
@@ -69,15 +66,58 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
                                 regexMatch("相关话题关注者[\\s\\S]*?<strong>([\\d]+)</strong>[\\s\\S]*?人", document.html())
                         ));
                 return question;
-            } else if (url.matches(zhuanlanUrl)) {
-                
-            }
-
             
         } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public Zhuanlan parseZhuanlan(Crawler crawler) {
+        String url = crawler.getUri().toString();
+
+        Zhuanlan zhuanlan = new Zhuanlan();
+        try {
+            String id = regexMatch("^https://zhuanlan\\.zhihu\\.com/p/([\\d]+)", url);
+            url = "https://zhuanlan.zhihu.com/api/posts/" + id;
+            String body = HttpsUtil.get(url, false);
+            JsonNode jsonNode = JacksonUtil.toJsonNode(body);
+
+            if (!jsonNode.get("rating").asText().equals("none")) {
+                zhuanlan.setRating(jsonNode.get("rating").asText());
+            }
+
+            zhuanlan.setTitle(jsonNode.get("title").asText());
+            zhuanlan.setTitleImage(jsonNode.get("titleImage").asText());
+
+            JsonNode topicsNode = jsonNode.get("topics");
+            List<Topic> topics = new ArrayList<>();
+            for (JsonNode node : topicsNode) {
+                Topic topic = new Topic();
+                topic.setUrl(node.get("url").asText());
+                topic.setName(node.get("name").asText());
+                topics.add(topic);
+            }
+            if (!topics.isEmpty()) {
+                zhuanlan.setTopics(topics);
+            }
+
+            zhuanlan.setAuthor(jsonNode.get("author").get("name").asText());
+            zhuanlan.setSlug(jsonNode.get("author").get("slug").asText());
+
+            zhuanlan.setContent(jsonNode.get("content").asText());
+
+            zhuanlan.setPublishedTime(jsonNode.get("publishedTime").asText());
+            zhuanlan.setSummary(jsonNode.get("summary").asText());
+            zhuanlan.setCommentsCount(jsonNode.get("commentsCount").asLong());
+            zhuanlan.setLikesCount(jsonNode.get("likesCount").asLong());
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return zhuanlan;
     }
 
     @Override

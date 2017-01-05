@@ -13,13 +13,14 @@ public enum CrawlType {
     
     CONTENT(1),
     
-    QUESTION(2),
+    QUESTION(20),
+    Zhuanlan(21),
     
     ANSWER(3),
     
-    FOLLOWEES(10),
+    FOLLOWEES(100),
 
-    FOLLOWERS(20);
+    FOLLOWERS(200);
 
     int type;
 

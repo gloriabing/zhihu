@@ -16,7 +16,7 @@ import java.util.List;
 @ToString
 public class Question {
 
-    private String url; 
+    private String url;
 
     private List<String> tags;
     private String title;
@@ -24,11 +24,8 @@ public class Question {
     private Long answerCount;
 
     private String content;
-    
     private Long followerCount;//关注数
 
     private Long viewCount;
     private Long relatedFollowerCount;
-    
-    
 }
