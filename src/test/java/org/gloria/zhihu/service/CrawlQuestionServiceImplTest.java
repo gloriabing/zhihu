@@ -1,6 +1,7 @@
 package org.gloria.zhihu.service;
 
 import org.gloria.zhihu.Application;
+import org.gloria.zhihu.model.Answer;
 import org.gloria.zhihu.model.CrawlType;
 import org.gloria.zhihu.model.Crawler;
 import org.gloria.zhihu.model.Question;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URI;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -40,7 +42,14 @@ public class CrawlQuestionServiceImplTest {
 
     @Test
     public void parseAnswerByQuestion() throws Exception {
+        Crawler crawler = new Crawler();
+        crawler.setUri(URI.create("https://www.zhihu.com/question/22176786"));
+        crawler.setCrawlType(CrawlType.ANSWER);
 
+        List<Answer> answers = crawlQuestionService.parseAnswerByQuestion(crawler);
+        for (Answer answer : answers) {
+            System.out.println(JacksonUtil.toJson(answer));
+        }
     }
 
     @Test

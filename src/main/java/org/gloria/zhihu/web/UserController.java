@@ -1,5 +1,6 @@
 package org.gloria.zhihu.web;
 
+import org.gloria.zhihu.constant.Api;
 import org.gloria.zhihu.constant.ResponseData;
 import org.gloria.zhihu.constant.Result;
 import org.gloria.zhihu.model.CrawlType;
@@ -75,7 +76,7 @@ public class UserController {
     public ResponseData fetchFollowersByUser(@PathVariable @NotNull String url_token) {
         ResponseData data = new ResponseData();
 
-        String url = "https://www.zhihu.com/people/" + url_token;
+        String url = Api.PEOPLE_HOST + url_token;
 
         Crawler crawler = new Crawler();
         crawler.setCrawlType(CrawlType.FOLLOWEES);

@@ -16,8 +16,5 @@ public interface ICrawlQuestionService {
 
     Question parseQuestion(Crawler crawler);
     Zhuanlan parseZhuanlan(Crawler crawler);
-
-    List<Answer> parseAnswerByQuestion(Crawler crawler);
-
-    List<Answer> parseTop10Answers(Crawler crawler);
+    
 }

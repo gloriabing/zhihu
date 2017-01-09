@@ -1,11 +1,10 @@
 package org.gloria.zhihu.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
 import org.apache.commons.lang.StringUtils;
+import org.gloria.zhihu.constant.Api;
 import org.gloria.zhihu.http.HttpsUtil;
 import org.gloria.zhihu.model.*;
-import org.gloria.zhihu.mongodb.dao.UserDao;
 import org.gloria.zhihu.service.ICrawlUserService;
 import org.gloria.zhihu.utils.JacksonUtil;
 import org.jsoup.Jsoup;
@@ -60,7 +59,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                         }
                         String href = authorElem.attr("href");
                         if (!href.startsWith("https")) {
-                            href = "https://www.zhihu.com" + href;
+                            href = Api.HOST + href;
                         }
                         Crawler c = new Crawler();
                         c.setUri(URI.create(href));
@@ -78,7 +77,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
             } else {
                 //用户页面
 
-                String url = "https://www.zhihu.com/api/v4/members/" + crawler.getUri().toString().substring("https://www.zhihu.com/people/".length()) + "/followees?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=10&offset=0";
+                String url = Api.FOLLOW_PREFIX + crawler.getUri().toString().substring(Api.PEOPLE_HOST.length()) + Api.FOLLOWEES_SUFFIX;
                 String body = HttpsUtil.get(url, false);
                 JsonNode json = JacksonUtil.toJsonNode(body);
                 JsonNode data = json.get("data");
@@ -88,7 +87,7 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
                         JsonNode node = (JsonNode) it.next();
                         String type = node.get("type").asText();
                         String url_token = URLEncoder.encode(node.get("url_token").asText());
-                        String userUrl = "https://www.zhihu.com/" + type + "/" + url_token;
+                        String userUrl = Api.HOST + "/" + type + "/" + url_token;
                         Crawler c = new Crawler();
                         c.setCrawlType(CrawlType.CONTENT);
                         c.setUri(URI.create(userUrl));
@@ -407,9 +406,9 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
         try {
             String url = "";
             if (crawler.getCrawlType() == CrawlType.FOLLOWEES) {
-                url = "https://www.zhihu.com/api/v4/members/" + crawler.getUri().toString().substring("https://www.zhihu.com/people/".length()) + "/followees?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=10&offset=0";
+                url = Api.FOLLOW_PREFIX + crawler.getUri().toString().substring(Api.PEOPLE_HOST.length()) + Api.FOLLOWEES_SUFFIX;
             } else if (crawler.getCrawlType() == CrawlType.FOLLOWERS) {
-                url = "https://www.zhihu.com/api/v4/members/" + crawler.getUri().toString().substring("https://www.zhihu.com/people/".length()) + "/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=10&offset=0";
+                url = Api.FOLLOW_PREFIX + crawler.getUri().toString().substring(Api.PEOPLE_HOST.length()) + Api.FOLLOWERS_SUFFIX;
             }
             if (StringUtils.isBlank(url)) {
                 return null;
@@ -466,8 +465,8 @@ public class CrawlUserServiceImpl implements ICrawlUserService {
 
             String type = JacksonUtil.getTextValue(node, "type");
             String url_token = URLEncoder.encode(node.get("url_token").asText());
-            String url = "https://www.zhihu.com/" + type + "/" + url_token;
-
+            String url = Api.HOST + "/" + type + "/" + url_token;
+            
             user.setUrl(url);
             user.setArticlesCount(JacksonUtil.getLongValue(node, "articles_count"));
             return user;

@@ -1,10 +1,12 @@
 package org.gloria.zhihu.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.gloria.zhihu.constant.Api;
 import org.gloria.zhihu.http.HttpsUtil;
 import org.gloria.zhihu.model.*;
 import org.gloria.zhihu.service.ICrawlQuestionService;
 import org.gloria.zhihu.utils.JacksonUtil;
+import org.gloria.zhihu.utils.RegexUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,10 +14,7 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
 
 /**
  * Create on 2017/1/3 14:11.
@@ -31,7 +30,9 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
     public Question parseQuestion(Crawler crawler) {
         try {
             String url = crawler.getUri().toString();
-            url = url.substring(0, url.indexOf('?'));
+            if (url.contains("?")) {
+                url = url.substring(0, url.indexOf('?'));
+            }
             
             Question question = new Question();
             question.setUrl(url);
@@ -56,14 +57,14 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
                 Element commentElem = document.getElementById("zh-question-meta-wrap").getElementsByAttributeValue("name", "addcomment").first();
                 if (commentElem != null) {
                     String commentCount = commentElem.html();
-                    commentCount = regexMatch("([\\d]+) 条评论", commentCount);
+                    commentCount = RegexUtil.regexMatch("([\\d]+) 条评论", commentCount);
                     question.setCommentCount(Long.parseLong(commentCount));
                 }
 
-                question.setViewCount(Long.parseLong(regexMatch("被浏览 [\\s\\S]*?<strong>([\\d]+)</strong> 次，", document.html())));
+                question.setViewCount(Long.parseLong(RegexUtil.regexMatch("被浏览 [\\s\\S]*?<strong>([\\d]+)</strong> 次，", document.html())));
                 question.setRelatedFollowerCount(
                         Long.parseLong(
-                                regexMatch("相关话题关注者[\\s\\S]*?<strong>([\\d]+)</strong>[\\s\\S]*?人", document.html())
+                                RegexUtil.regexMatch("相关话题关注者[\\s\\S]*?<strong>([\\d]+)</strong>[\\s\\S]*?人", document.html())
                         ));
                 return question;
             
@@ -79,8 +80,8 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
 
         Zhuanlan zhuanlan = new Zhuanlan();
         try {
-            String id = regexMatch("^https://zhuanlan\\.zhihu\\.com/p/([\\d]+)", url);
-            url = "https://zhuanlan.zhihu.com/api/posts/" + id;
+            String id = RegexUtil.regexMatch("^https://zhuanlan\\.zhihu\\.com/p/([\\d]+)", url);
+            url = Api.ZHUANLAN + id;
             String body = HttpsUtil.get(url, false);
             JsonNode jsonNode = JacksonUtil.toJsonNode(body);
 
@@ -120,22 +121,7 @@ public class CrawlQuestionServiceImpl implements ICrawlQuestionService{
         return zhuanlan;
     }
 
-    @Override
-    public List<Answer> parseAnswerByQuestion(Crawler crawler) {
-        return null;
-    }
+   
 
-    @Override
-    public List<Answer> parseTop10Answers(Crawler crawler) {
-        return null;
-    }
-
-    private String regexMatch(String regexExp, String text) {
-        Pattern pattern = Pattern.compile(regexExp);
-        Matcher matcher = pattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return null;
-    }
+    
 }
