@@ -13,6 +13,8 @@ import lombok.ToString;
 @Setter
 @ToString
 public class Comment {
+    private String url;
+    private String inReplyToCommentId;
     private String title;
     private String content;
 

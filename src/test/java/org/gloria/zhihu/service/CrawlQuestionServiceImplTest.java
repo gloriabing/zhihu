@@ -39,22 +39,5 @@ public class CrawlQuestionServiceImplTest {
         System.out.println(JacksonUtil.toJson(question));
         
     }
-
-    @Test
-    public void parseAnswerByQuestion() throws Exception {
-        Crawler crawler = new Crawler();
-        crawler.setUri(URI.create("https://www.zhihu.com/question/22176786"));
-        crawler.setCrawlType(CrawlType.ANSWER);
-
-        List<Answer> answers = crawlQuestionService.parseAnswerByQuestion(crawler);
-        for (Answer answer : answers) {
-            System.out.println(JacksonUtil.toJson(answer));
-        }
-    }
-
-    @Test
-    public void parseTop10Answers() throws Exception {
-
-    }
-
+    
 }

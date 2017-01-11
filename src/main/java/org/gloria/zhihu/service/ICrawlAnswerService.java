@@ -18,7 +18,7 @@ public interface ICrawlAnswerService {
 
     List<Answer> parseTop10Answers(Crawler crawler);
 
-    List<Comment> parseCommentByQuestion(Crawler crawler);
+    List<Comment> parseCommentByAnswer(Crawler crawler);
 
     List<Comment> parseCommentByZhuanlan(Crawler crawler);
     

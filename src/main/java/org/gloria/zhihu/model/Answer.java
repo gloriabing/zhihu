@@ -15,6 +15,8 @@ import lombok.ToString;
 public class Answer {
 
     private String url;
+    private String answerId;
+    private String authorUrl;
     private String author;
     private String avatar;
     private String content;

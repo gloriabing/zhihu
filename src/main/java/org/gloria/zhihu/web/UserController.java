@@ -24,7 +24,6 @@ import java.util.List;
  *
  * @author : gloria.
  */
-@SuppressWarnings("ALL")
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -55,7 +54,7 @@ public class UserController {
     public ResponseData fetchFolloweesByUser(@PathVariable @NotNull String url_token) {
         ResponseData data = new ResponseData();
 
-        String url = "https://www.zhihu.com/people/" + url_token;
+        String url = Api.PEOPLE_HOST + url_token;
 
         Crawler crawler = new Crawler();
         crawler.setCrawlType(CrawlType.FOLLOWEES);

@@ -18,6 +18,9 @@ public enum CrawlType {
     
     ANSWER(3),
     
+    COMMENT(40),
+    COMMENT_ZHUANLAN(41),
+    
     FOLLOWEES(100),
 
     FOLLOWERS(200);

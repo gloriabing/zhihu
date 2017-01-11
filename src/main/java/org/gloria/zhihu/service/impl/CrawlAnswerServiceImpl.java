@@ -13,7 +13,9 @@ import org.gloria.zhihu.utils.RegexUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -21,6 +23,7 @@ import java.util.*;
  *
  * @author : gloria.
  */
+@Service
 public class CrawlAnswerServiceImpl implements ICrawlAnswerService {
     @Override
     public List<Answer> parseAnswerByQuestion(Crawler crawler) {
@@ -53,9 +56,15 @@ public class CrawlAnswerServiceImpl implements ICrawlAnswerService {
                 Document document = Jsoup.parse(node.asText());
                 Answer answer = new Answer();
 
+                Element answerUrlElem = document.getElementsByAttributeValue("itemprop", "url").first();
+                if (null != answerUrlElem) {
+                    answer.setUrl(answerUrlElem.attr("href").startsWith("https") ? answerUrlElem.attr("href") : Api.HOST + answerUrlElem.attr("href"));       
+                }
+                answer.setAnswerId(document.getElementsByAttributeValue("itemprop", "answer-id").first().attr("content"));
+                
                 Element authorElem = document.getElementsByClass("author-link").first();
                 if (authorElem != null) {
-                    answer.setUrl(authorElem.attr("href").startsWith("https") ? authorElem.attr("href") : "https://www.zhihu.com" + authorElem.attr("href"));
+                    answer.setAuthorUrl(authorElem.attr("href").startsWith("https") ? authorElem.attr("href") : "https://www.zhihu.com" + authorElem.attr("href"));
                 } else {
                     authorElem = document.select("span.author-link-line > span.name").first();
                     if (authorElem == null) {
@@ -111,12 +120,109 @@ public class CrawlAnswerServiceImpl implements ICrawlAnswerService {
     }
 
     @Override
-    public List<Comment> parseCommentByQuestion(Crawler crawler) {
-        return null;
+    public List<Comment> parseCommentByAnswer(Crawler crawler) {
+
+        String url = crawler.getUri().toString();
+        List<Comment> comments = new ArrayList<>();
+
+        try {
+            String body = HttpsUtil.get(url, false);
+            Document document = Jsoup.parse(body);
+            String answerId = document.getElementsByAttributeValue("itemprop", "answer-id").first().attr("content");
+            url = Api.COMMENT.replace("([answerId])", answerId).replace("([page])", "1");
+            body = HttpsUtil.get(url, false);
+            JsonNode jsonNode = JacksonUtil.toJsonNode(body);
+            JsonNode paging = jsonNode.get("paging");
+            int totalCount = JacksonUtil.getIntValue(paging, "totalCount");
+            int perPage = JacksonUtil.getIntValue(paging, "perPage");
+
+            int totalPage = totalCount / perPage + 1;
+            comments.addAll(parseComments(jsonNode.get("data"), false));
+            for (int i = 1; i < totalCount; i++) {
+                url = Api.COMMENT.replace("([answerId])", answerId).replace("([page])", i + "");
+                comments.addAll(parseComments(jsonNode.get("data"), false));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return comments;
+    }
+
+    private List<Comment> parseComments(JsonNode node, boolean isZhuanlan) {
+        List<Comment> comments = new ArrayList<>();
+        for (JsonNode jsonNode : node) {
+            String url = JacksonUtil.getTextValue(jsonNode, "href");
+            url = url.startsWith("https") ? url : Api.HOST + url;
+            String content = JacksonUtil.getTextValue(jsonNode, "content");
+            String createdTime = JacksonUtil.getTextValue(jsonNode, "createdTime");
+            String inReplyToCommentId = JacksonUtil.getTextValue(jsonNode, "inReplyToCommentId");
+            String authorName = JacksonUtil.getTextValue(jsonNode.get("author"), "name");
+            String authorSlug = JacksonUtil.getTextValue(jsonNode.get("author"), "slug");
+            Long likesCount = JacksonUtil.getLongValue(jsonNode, "likesCount");
+            
+            Comment comment = new Comment();
+            comment.setUrl(url);
+            comment.setContent(content);
+            comment.setCreatedTime(createdTime);
+            comment.setInReplyToCommentId(inReplyToCommentId);
+            comment.setAuthor(authorName);
+            comment.setAuthor_slug(authorSlug);
+            comment.setLikesCount(likesCount);
+
+            if (jsonNode.get("inReplyToUser") != null && !jsonNode.get("inReplyToUser").isNull()) {
+                comment.setInReplyToUser(JacksonUtil.getTextValue(jsonNode.get("inReplyToUser"), "name"));
+                comment.setInReplyToUser_slug(JacksonUtil.getTextValue(jsonNode.get("inReplyToUser"), "slug"));
+            }
+
+            if (StringUtils.isNotBlank(comment.getInReplyToUser())) {
+                if (JacksonUtil.getBoolValue(jsonNode, "featured")) {
+                    comment.setTitle(comment.getAuthor() + (isZhuanlan ? " (作者) " : " (提问者) ") + " 回复 " + comment.getInReplyToUser());
+                } else {
+                    comment.setTitle(comment.getAuthor() + " 回复 " + comment.getInReplyToUser());
+                } 
+            } else {
+                if (JacksonUtil.getBoolValue(jsonNode, "featured")) {
+                    comment.setTitle(comment.getAuthor() + (isZhuanlan ? " (作者) " : " (提问者) "));
+                } else {
+                    comment.setTitle(comment.getAuthor());
+                } 
+            }
+            System.out.println(JacksonUtil.toJson(comment));
+            comments.add(comment);
+        }
+        return comments;
     }
 
     @Override
     public List<Comment> parseCommentByZhuanlan(Crawler crawler) {
-        return null;
+        String url = crawler.getUri().toString();
+        String id = RegexUtil.regexMatch("^https://zhuanlan\\.zhihu\\.com/p/([\\d]+)", url);
+
+        List<Comment> comments = new ArrayList<>();
+
+        try {
+            String body = null;
+            int page = 1;
+            JsonNode jsonNode = JacksonUtil.toJsonNode("[]");
+
+            do {
+                int offset = (page - 1) * 10;
+                url = Api.COMMENT_ZHUANLAN.replace("([id])", id).replace("([offset])", String.valueOf(offset));
+                System.out.println("____________________________________________________________________________________");
+                System.out.println(url);
+                System.out.println("____________________________________________________________________________________");
+                body = HttpsUtil.get(url, false);
+                if (StringUtils.isNotBlank(body)) {
+                    jsonNode = JacksonUtil.toJsonNode(body);
+                    comments.addAll(parseComments(jsonNode, true));
+                    page++;
+                }
+            } while (jsonNode.size() != 0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return comments;
     }
 }

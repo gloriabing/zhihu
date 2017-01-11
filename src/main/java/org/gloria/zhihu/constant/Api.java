@@ -19,5 +19,9 @@ public class Api {
     public static final String QUESTION_ANSWER = "https://www.zhihu.com/node/QuestionAnswerListV2";
 
     public static final String ZHUANLAN = "https://zhuanlan.zhihu.com/api/posts/";
+
+    public static final String COMMENT = "https://www.zhihu.com/r/answers/([answerId])/comments?page=([page])";
+
+    public static final String COMMENT_ZHUANLAN = "https://zhuanlan.zhihu.com/api/posts/([id])/comments?limit=10&offset=([offset])";
     
 }
