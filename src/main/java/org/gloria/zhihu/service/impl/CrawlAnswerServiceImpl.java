@@ -138,8 +138,10 @@ public class CrawlAnswerServiceImpl implements ICrawlAnswerService {
 
             int totalPage = totalCount / perPage + 1;
             comments.addAll(parseComments(jsonNode.get("data"), false));
-            for (int i = 1; i < totalCount; i++) {
+            for (int i = 1; i < totalPage; i++) {
                 url = Api.COMMENT.replace("([answerId])", answerId).replace("([page])", i + "");
+                body = HttpsUtil.get(url, false);
+                jsonNode = JacksonUtil.toJsonNode(body);
                 comments.addAll(parseComments(jsonNode.get("data"), false));
             }
         } catch (IOException e) {
