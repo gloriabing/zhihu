@@ -7,7 +7,7 @@ import org.gloria.zhihu.model.CrawlType;
 import org.gloria.zhihu.model.Crawler;
 import org.gloria.zhihu.model.UserInfo;
 import org.gloria.zhihu.service.ICrawlUserService;
-import org.gloria.zhihu.utils.JacksonUtil;
+import org.gloria.zhihu.util.JacksonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

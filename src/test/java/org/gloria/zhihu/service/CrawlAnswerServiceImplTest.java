@@ -5,17 +5,16 @@ import org.gloria.zhihu.model.Answer;
 import org.gloria.zhihu.model.Comment;
 import org.gloria.zhihu.model.CrawlType;
 import org.gloria.zhihu.model.Crawler;
-import org.gloria.zhihu.utils.JacksonUtil;
+import org.gloria.zhihu.util.JacksonUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.net.URI;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * Create on 2017/1/11 15:17.
@@ -23,7 +22,7 @@ import static org.junit.Assert.*;
  * @author : gloria.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringBootTest(classes = Application.class)
 public class CrawlAnswerServiceImplTest {
 
     @Autowired
@@ -32,7 +31,7 @@ public class CrawlAnswerServiceImplTest {
     @Test
     public void parseAnswerByQuestion() throws Exception {
         Crawler crawler = new Crawler();
-        crawler.setUri(URI.create("https://www.zhihu.com/question/22176786"));
+        crawler.setUri(URI.create("https://www.zhihu.com/question/21234453"));
         crawler.setCrawlType(CrawlType.ANSWER);
 
         List<Answer> answers = crawlAnswerService.parseAnswerByQuestion(crawler);
@@ -43,7 +42,14 @@ public class CrawlAnswerServiceImplTest {
 
     @Test
     public void parseTop10Answers() throws Exception {
+        Crawler crawler = new Crawler();
+        crawler.setUri(URI.create("https://www.zhihu.com/question/21234453"));
+        crawler.setCrawlType(CrawlType.ANSWER);
 
+        List<Answer> answers = crawlAnswerService.parseTop10Answers(crawler);
+        for (Answer answer : answers) {
+            System.out.println(JacksonUtil.toJson(answer));
+        }
     }
 
     @Test

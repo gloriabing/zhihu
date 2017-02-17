@@ -1,44 +1,31 @@
 package org.gloria.zhihu.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import okhttp3.*;
-import okio.BufferedSink;
 import org.gloria.zhihu.Application;
-import org.gloria.zhihu.constant.UrlTemplate;
 import org.gloria.zhihu.http.HttpsUtil;
 import org.gloria.zhihu.model.CrawlType;
 import org.gloria.zhihu.model.Crawler;
 import org.gloria.zhihu.model.User;
 import org.gloria.zhihu.mongodb.dao.UserDao;
 import org.gloria.zhihu.redis.CustomRedisTemplate;
-import org.gloria.zhihu.utils.JacksonUtil;
-import org.gloria.zhihu.utils.ResourcesUtil;
+import org.gloria.zhihu.util.JacksonUtil;
+import org.gloria.zhihu.util.ResourcesUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.junit.Assert.*;
 
 /**
  * Create on 2016/12/23 16:14.
@@ -47,7 +34,7 @@ import static org.junit.Assert.*;
  */
 //@EnableAutoConfiguration(exclude = {RedisAutoConfiguration.class, DataSourceAutoConfiguration.class})
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringBootTest(classes = Application.class)
 public class CrawlUserServiceImplTest {
 
     private final Logger LOG = LoggerFactory.getLogger("service");

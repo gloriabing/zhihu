@@ -6,7 +6,7 @@ import org.gloria.zhihu.constant.Api;
 import org.gloria.zhihu.http.HttpsUtil;
 import org.gloria.zhihu.model.*;
 import org.gloria.zhihu.service.ICrawlUserService;
-import org.gloria.zhihu.utils.JacksonUtil;
+import org.gloria.zhihu.util.JacksonUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

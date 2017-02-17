@@ -1,4 +1,4 @@
-package org.gloria.zhihu.utils;
+package org.gloria.zhihu.util;
 
 import org.apache.commons.codec.binary.Base64;
 

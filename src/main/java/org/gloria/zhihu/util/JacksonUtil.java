@@ -1,4 +1,4 @@
-package org.gloria.zhihu.utils;
+package org.gloria.zhihu.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -96,7 +96,11 @@ public class JacksonUtil {
     }
 
     public static String getTextValue(JsonNode node, String key) {
-        return node.get(key).asText();
+        try {
+            return node.get(key).asText();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static Integer getIntValue(JsonNode node, String key) {

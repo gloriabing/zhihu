@@ -1,4 +1,4 @@
-package org.gloria.zhihu.utils;
+package org.gloria.zhihu.util;
 
 import java.io.IOException;
 import java.io.InputStream;
